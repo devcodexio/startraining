@@ -1,0 +1,217 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Services\ExternalApiService;
+use App\Config\Database;
+
+class PostulationController {
+
+    public function store() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+
+        $vacante_id = $_POST['vacante_id'];
+        $dni        = $_POST['dni'];
+        $nombre     = $_POST['nombre_completo'];
+        $celular    = $_POST['celular'];
+        $email      = $_POST['correo_estudiante'];
+
+        // 1. Manejo de Archivo (CV)
+        $cvPath = '';
+        if (isset($_FILES['url_cv_pdf']) && $_FILES['url_cv_pdf']['error'] === 0) {
+            $ext = pathinfo($_FILES['url_cv_pdf']['name'], PATHINFO_EXTENSION);
+            $fileName = 'cv_' . $dni . '_' . time() . '.' . $ext;
+            $uploadDir = __DIR__ . '/../../public/uploads/cvs/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+            if (move_uploaded_file($_FILES['url_cv_pdf']['tmp_name'], $uploadDir . $fileName)) {
+                $cvPath = 'uploads/cvs/' . $fileName;
+            }
+        }
+
+        // 2. Guardar en DB con match=0, estado en_espera (la IA se activa manualmente)
+        $db = Database::getConnection();
+        $sql = "INSERT INTO postulaciones (vacante_id, dni, nombre_completo, correo_estudiante, celular, url_cv_pdf, match_porcentaje, estado_postulacion)
+                VALUES (?, ?, ?, ?, ?, ?, 0, 'en_espera')";
+
+        try {
+            $stmt = $db->prepare($sql);
+            $stmt->execute([$vacante_id, $dni, $nombre, $email, $celular, $cvPath]);
+            $postulacion_id = $db->lastInsertId();
+
+            header("Location: /vacante/$vacante_id?postulado=success");
+            exit;
+        } catch (\Exception $e) {
+            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode($e->getMessage()));
+            exit;
+        }
+    }
+
+    /**
+     * Analiza UN candidato con la IA de n8n y actualiza la BD.
+     * POST /api/analizar-cv  { postulacion_id: int }
+     */
+    public function analizarCv() {
+        set_time_limit(180); // Increase time for slow AI
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'error' => 'Método no permitido']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $postulacionId = intval($input['postulacion_id'] ?? 0);
+
+        if (!$postulacionId) {
+            echo json_encode(['success' => false, 'error' => 'ID inválido']);
+            return;
+        }
+
+        $db = Database::getConnection();
+
+        // Obtener postulación + requisitos de la vacante
+        $stmt = $db->prepare("SELECT p.*, v.requisitos_raw, v.titulo_puesto
+                               FROM postulaciones p
+                               JOIN vacantes v ON p.vacante_id = v.id
+                               WHERE p.id = ?");
+        $stmt->execute([$postulacionId]);
+        $post = $stmt->fetch();
+
+        if (!$post) {
+            echo json_encode(['success' => false, 'error' => 'Postulación no encontrada']);
+            return;
+        }
+
+        // Ruta del CV en disco
+        $cvFilePath = __DIR__ . '/../../public/' . $post['url_cv_pdf'];
+        if (!file_exists($cvFilePath)) {
+            echo json_encode(['success' => false, 'error' => 'Archivo CV no encontrado en el servidor']);
+            return;
+        }
+
+        // Llamar a n8n
+        $resultado = ExternalApiService::analizarCvConN8n($cvFilePath, $post['requisitos_raw']);
+
+        if (!$resultado['success']) {
+            echo json_encode(['success' => false, 'error' => $resultado['error']]);
+            return;
+        }
+
+        $puntaje     = $resultado['puntaje'];
+        $descripcion = $resultado['descripcion'];
+
+        // Actualizar BD
+        $upd = $db->prepare("UPDATE postulaciones 
+                              SET match_porcentaje = ?, ia_analisis_descripcion = ?, estado_postulacion = 'Análisis IA Realizado'
+                              WHERE id = ?");
+        $upd->execute([$puntaje, $descripcion, $postulacionId]);
+
+        echo json_encode([
+            'success'     => true,
+            'puntaje'     => $puntaje,
+            'descripcion' => $descripcion,
+        ]);
+    }
+
+    /**
+     * Analiza TODOS los candidatos en_espera de una empresa con la IA.
+     * POST /api/analizar-todos  { empresa_id: int }
+     */
+    public function analizarTodos() {
+        set_time_limit(300); // Bulk analysis takes longer
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'error' => 'Método no permitido']);
+            return;
+        }
+
+        $empresaId = intval($_SESSION['user_id'] ?? 0);
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare("SELECT p.*, v.requisitos_raw
+                               FROM postulaciones p
+                               JOIN vacantes v ON p.vacante_id = v.id
+                               WHERE v.empresa_id = ? AND p.estado_postulacion = 'en_espera'");
+        $stmt->execute([$empresaId]);
+        $pendientes = $stmt->fetchAll();
+
+        $resultados = [];
+        $ok = 0;
+        $fail = 0;
+
+        foreach ($pendientes as $post) {
+            $cvFilePath = __DIR__ . '/../../public/' . $post['url_cv_pdf'];
+
+            if (!file_exists($cvFilePath)) {
+                $fail++;
+                continue;
+            }
+
+            $resultado = ExternalApiService::analizarCvConN8n($cvFilePath, $post['requisitos_raw']);
+
+            if ($resultado['success']) {
+                $upd = $db->prepare("UPDATE postulaciones 
+                                     SET match_porcentaje = ?, ia_analisis_descripcion = ?, estado_postulacion = 'Análisis IA Realizado'
+                                     WHERE id = ?");
+                $upd->execute([$resultado['puntaje'], $resultado['descripcion'], $post['id']]);
+                $resultados[] = ['id' => $post['id'], 'puntaje' => $resultado['puntaje']];
+                $ok++;
+            } else {
+                $fail++;
+            }
+        }
+
+        echo json_encode([
+            'success'    => true,
+            'analizados' => $ok,
+            'fallidos'   => $fail,
+            'total'      => count($pendientes),
+            'resultados' => $resultados,
+        ]);
+    }
+
+    public function consultDni() {
+        $dni  = $_GET['dni'] ?? '';
+        $data = ExternalApiService::consultDni($dni);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+    }
+
+    /**
+     * Consulta el resultado de una postulación por DNI y vacante_id
+     * GET /api/postulacion/resultado?dni=...&vacante_id=...
+     */
+    public function getResultadoDni() {
+        header('Content-Type: application/json');
+        
+        $dni       = $_GET['dni'] ?? '';
+        $vacanteId = intval($_GET['vacante_id'] ?? 0);
+
+        if (!$dni || !$vacanteId) {
+            echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
+            return;
+        }
+
+        $db   = Database::getConnection();
+        $stmt = $db->prepare("SELECT nombre_completo, match_porcentaje, estado_postulacion, ia_analisis_descripcion 
+                               FROM postulaciones 
+                               WHERE dni = ? AND vacante_id = ? 
+                               ORDER BY fecha_postulacion DESC LIMIT 1");
+        $stmt->execute([$dni, $vacanteId]);
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            echo json_encode(['success' => false, 'error' => 'No se encontró ninguna postulación con ese DNI para esta vacante.']);
+            return;
+        }
+
+        echo json_encode([
+            'success'    => true,
+            'nombre'     => $row['nombre_completo'],
+            'match'      => floatval($row['match_porcentaje']),
+            'estado'     => $row['estado_postulacion'],
+            'analisis'   => $row['ia_analisis_descripcion']
+        ]);
+    }
+}
