@@ -40,7 +40,7 @@ function matchColor($pct) {
 
 $estadoMap = [
     'en_espera'              => ['label' => 'En Espera',   'class' => 'badge-warning'],
-    'Análisis IA Realizado'  => ['label' => 'IA Realizado','class' => 'badge-primary'],
+    'IA Realizado'           => ['label' => 'IA Realizado','class' => 'badge-primary'],
     'Apto'                   => ['label' => 'Apto',        'class' => 'badge-success'],
     'No Apto'                => ['label' => 'No Apto',     'class' => 'badge-danger'],
 ];
@@ -163,7 +163,7 @@ $estadoMap = [
                 <select name="estado" class="form-input" style="max-width:200px; padding: 0.6rem 1rem;">
                     <option value="">Todos los estados</option>
                     <option value="en_espera" <?= $filterStatus==='en_espera' ? 'selected':'' ?>>En Espera</option>
-                    <option value="Análisis IA Realizado" <?= $filterStatus==='Análisis IA Realizado' ? 'selected':'' ?>>IA Realizado</option>
+                    <option value="IA Realizado" <?= $filterStatus==='IA Realizado' ? 'selected':'' ?>>IA Realizado</option>
                     <option value="Apto" <?= $filterStatus==='Apto' ? 'selected':'' ?>>Apto</option>
                     <option value="No Apto" <?= $filterStatus==='No Apto' ? 'selected':'' ?>>No Apto</option>
                 </select>
