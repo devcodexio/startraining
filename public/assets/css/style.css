@@ -78,8 +78,7 @@ html { scroll-behavior: smooth; }
 body {
     background: var(--bg-gradient);
     background-attachment: fixed;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
     color: var(--text-primary);
     font-family: var(--font);
     font-size: 0.9rem;
