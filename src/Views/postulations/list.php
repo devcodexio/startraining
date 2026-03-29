@@ -279,6 +279,39 @@ $estadoMap = [
         </div>
     </div>
 
+    <!-- Email Modal -->
+    <div id="emailModal" class="modal-cyber" style="display:none;">
+        <div class="modal-cyber-content glass-card" style="max-width:550px; padding:2rem;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="text-gradient mb-0"><i class="fas fa-paper-plane me-2"></i>Enviar Notificación</h3>
+                <button onclick="closeEmailModal()" class="btn-ghost" style="padding:0.5rem;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="emailForm" onsubmit="sendCandidateEmail(event)">
+                <input type="hidden" id="emailPostId">
+                <div class="mb-3">
+                    <label class="xsmall text-muted fw-800 mb-1 d-block text-uppercase">Para:</label>
+                    <input type="text" id="emailTo" class="form-input" readonly style="opacity:0.6;">
+                </div>
+                <div class="mb-3">
+                    <label class="xsmall text-muted fw-800 mb-1 d-block text-uppercase">Asunto:</label>
+                    <input type="text" id="emailSubject" class="form-input" required value="Noticias sobre tu postulación | StarTraining">
+                </div>
+                <div class="mb-4">
+                    <label class="xsmall text-muted fw-800 mb-1 d-block text-uppercase">Mensaje Adicional:</label>
+                    <textarea id="emailMessage" class="form-input" rows="5" required placeholder="Escribe el mensaje para el candidato..."></textarea>
+                    <p class="text-muted xsmall mt-1 mt-2">Este mensaje se enviará solo si el candidato es <b>Apto</b>.</p>
+                </div>
+                <div class="d-flex gap-3 justify-content-end">
+                    <button type="button" onclick="closeEmailModal()" class="btn-ghost" style="padding:0.75rem 1.5rem;">CANCELAR</button>
+                    <button type="submit" id="btnSendEmail" class="btn-futuristic" style="padding:0.75rem 2rem;">
+                        <i class="fas fa-robot me-1"></i> ENVIAR CORREO
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         /* ============================================
            Helper: Build candidate detail HTML
@@ -288,14 +321,22 @@ $estadoMap = [
             const matchHtml = pct > 0
                 ? `<span style="font-size:1.8rem; font-weight:900; color:${color};">${pct}%</span>`
                 : `<span class="text-muted">Pendiente de análisis</span>`;
+            
             const descHtml = descripcion
                 ? `<div class="border-top pt-3 mt-3"><p class="xsmall text-muted fw-800 mb-1">OPINIÓN DE LA IA</p><p style="font-size:0.9rem; line-height:1.6;">${descripcion}</p></div>`
                 : '';
+                
             const btnIA = isPending
                 ? `<button class="btn-futuristic py-2 px-4" style="font-size:0.78rem; background: linear-gradient(135deg, var(--accent), #a855f7);" onclick="closeDetailModal(); analizarUno(${postId}, '${puesto}')"><i class='fas fa-robot me-2'></i> ANALIZAR CON IA</button>`
                 : '';
+            
             const btnCV = cvUrl
                 ? `<a href="${cvUrl}" target="_blank" class="btn-futuristic py-2 px-4" style="font-size:0.78rem;"><i class='fas fa-file-pdf me-2'></i> VER CV</a>`
+                : '';
+
+            // Solo mostrar botón de correo si es APTO
+            const btnEmail = (estadoLabel === 'Apto')
+                ? `<button class="btn-futuristic py-2 px-4" style="font-size:0.78rem; background: #007bff;" onclick="closeDetailModal(); openEmailModal(${postId}, '${nombre}', '${correo}')"><i class='fas fa-envelope me-2'></i> ENVIAR CORREO</button>`
                 : '';
 
             return `
@@ -305,15 +346,89 @@ $estadoMap = [
                     <div class="detail-field"><div class="detail-field-label">Correo</div><div class="detail-field-value small">${correo}</div></div>
                     <div class="detail-field"><div class="detail-field-label">Celular</div><div class="detail-field-value">${celular}</div></div>
                     <div class="detail-field"><div class="detail-field-label">Vacante</div><div class="detail-field-value">${puesto}</div></div>
-                    <div class="detail-field"><div class="detail-field-label">Estado</div><span class="badge ${estadoClass}">${estadoLabel}</span></div>
+                    <div class="detail-field"><div class="detail-field-label">Estado Actual</div><span class="badge ${estadoClass}">${estadoLabel}</span></div>
+                    
                     <div class="detail-field" style="grid-column:span 2;">
-                        <div class="detail-field-label">AI Match</div>${matchHtml}
+                        <div class="detail-field-label">Cambiar Estado</div>
+                        <div class="d-flex gap-2">
+                            <button class="btn-futuristic small flex-grow-1 py-2" style="background:#10b981; font-size:0.65rem;" onclick="updateCandidateStatus(${postId}, 'Apto')">MARCAR APTO</button>
+                            <button class="btn-futuristic small flex-grow-1 py-2" style="background:#ef4444; font-size:0.65rem;" onclick="updateCandidateStatus(${postId}, 'No Apto')">MARCAR NO APTO</button>
+                        </div>
+                    </div>
+
+                    <div class="detail-field" style="grid-column:span 2;">
+                        <div class="detail-field-label">AI Match Score</div>${matchHtml}
                     </div>
                 </div>
                 ${descHtml}
-                <div class="d-flex gap-3 mt-4 pt-3 border-top justify-content-end">
-                    ${btnIA}${btnCV}
+                <div class="d-flex gap-2 mt-4 pt-3 border-top justify-content-end">
+                    ${btnIA}${btnEmail}${btnCV}
                 </div>`;
+        }
+
+        /* ============================================
+           Status/Email JS Actions
+           ============================================ */
+        async function updateCandidateStatus(postId, newStatus) {
+            if (!confirm(`¿Cambiar estado a "${newStatus}"?`)) return;
+            try {
+                const res = await fetch('/api/postulacion/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postulacion_id: postId, estado: newStatus })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    StarAlert.show('Actualizado', `Estado cambiado a ${newStatus}`, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function openEmailModal(postId, nombre, correo) {
+            document.getElementById('emailPostId').value = postId;
+            document.getElementById('emailTo').value = `${nombre} <${correo}>`;
+            document.getElementById('emailModal').style.display = 'flex';
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModal').style.display = 'none';
+        }
+
+        async function sendCandidateEmail(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btnSendEmail');
+            const postId = document.getElementById('emailPostId').value;
+            const subject = document.getElementById('emailSubject').value;
+            const message = document.getElementById('emailMessage').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner spinner"></i> ENVIANDO...';
+
+            try {
+                const res = await fetch('/api/postulacion/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        postulacion_id: postId, 
+                        subject: subject,
+                        message: message
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    StarAlert.show('¡Enviado!', 'El correo se ha enviado exitosamente.', 'success');
+                    closeEmailModal();
+                } else {
+                    StarAlert.show('Error', data.error || 'No se pudo enviar el correo.', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                StarAlert.show('Error', 'Fallo de conexión.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-robot me-1"></i> ENVIAR CORREO';
+            }
         }
 
         /* ============================================
