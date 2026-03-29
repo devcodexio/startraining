@@ -217,6 +217,9 @@ $companyLogo = $v['foto_perfil'] ?: 'https://ui-avatars.com/api/?name=' . urlenc
             const params = new URLSearchParams(window.location.search);
             if (params.get('postulado') === 'success') {
                 StarAlert.show('¡Postulación Recibida!', 'Hemos recibido tus datos con éxito. Tu CV está siendo analizado. La empresa recibirá tu puntuación pronto.', 'success');
+            } else if (params.get('postulado') === 'error') {
+                const msg = params.get('msg') || 'Hubo un error al procesar tu postulación.';
+                StarAlert.show('Error en Postulación', msg, 'error');
             }
         });
     </script>
