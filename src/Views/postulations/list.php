@@ -102,6 +102,28 @@ $estadoMap = [
             50% { opacity: 1; text-shadow: 0 0 10px var(--primary); }
             100% { opacity: 0.5; }
         }
+
+        /* Fixed Centered Email Modal */
+        #emailModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            z-index: 10000;
+            display: none; /* Flex on open */
+            align-items: center; /* Centrado vertical */
+            justify-content: center; /* Centrado horizontal */
+            padding: 1.5rem;
+        }
+        #emailModal .glass-card {
+            width: 100%;
+            max-width: 550px;
+            animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
     </style>
 </head>
 <body class="animate">
@@ -279,19 +301,19 @@ $estadoMap = [
         </div>
     </div>
 
-    <!-- Email Modal -->
-    <div id="emailModal" class="modal-cyber" style="display:none;">
-        <div class="modal-cyber-content glass-card" style="max-width:550px; padding:2rem;">
+    <!-- Email Modal (Centered) -->
+    <div id="emailModal">
+        <div class="glass-card" onclick="event.stopPropagation()">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="text-gradient mb-0"><i class="fas fa-paper-plane me-2"></i>Enviar Notificación</h3>
-                <button onclick="closeEmailModal()" class="btn-ghost" style="padding:0.5rem;"><i class="fas fa-times"></i></button>
+                <button onclick="closeEmailModal()" class="btn-ghost" style="padding:0.4rem 0.75rem; border-radius:10px;"><i class="fas fa-times"></i></button>
             </div>
             
             <form id="emailForm" onsubmit="sendCandidateEmail(event)">
                 <input type="hidden" id="emailPostId">
                 <div class="mb-3">
                     <label class="xsmall text-muted fw-800 mb-1 d-block text-uppercase">Para:</label>
-                    <input type="text" id="emailTo" class="form-input" readonly style="opacity:0.6;">
+                    <input type="text" id="emailTo" class="form-input" readonly style="background:rgba(255,255,255,0.05);">
                 </div>
                 <div class="mb-3">
                     <label class="xsmall text-muted fw-800 mb-1 d-block text-uppercase">Asunto:</label>
@@ -300,12 +322,11 @@ $estadoMap = [
                 <div class="mb-4">
                     <label class="xsmall text-muted fw-800 mb-1 d-block text-uppercase">Mensaje Adicional:</label>
                     <textarea id="emailMessage" class="form-input" rows="5" required placeholder="Escribe el mensaje para el candidato..."></textarea>
-                    <p class="text-muted xsmall mt-1 mt-2">Este mensaje se enviará solo si el candidato es <b>Apto</b>.</p>
                 </div>
                 <div class="d-flex gap-3 justify-content-end">
-                    <button type="button" onclick="closeEmailModal()" class="btn-ghost" style="padding:0.75rem 1.5rem;">CANCELAR</button>
-                    <button type="submit" id="btnSendEmail" class="btn-futuristic" style="padding:0.75rem 2rem;">
-                        <i class="fas fa-robot me-1"></i> ENVIAR CORREO
+                    <button type="button" onclick="closeEmailModal()" class="btn-ghost" style="padding:0.7rem 1.5rem;">Cerrar</button>
+                    <button type="submit" id="btnSendEmail" class="btn-futuristic" style="padding:0.7rem 2rem; background:linear-gradient(135deg, #007bff, #00d2ff);">
+                        <i class="fas fa-paper-plane me-2"></i> ENVIAR AHORA
                     </button>
                 </div>
             </form>
