@@ -19,5 +19,7 @@ COPY . /var/www/html/
 
 # 🔹 Permisos
 RUN chown -R www-data:www-data /var/www/html
+RUN a2enmod rewrite
+RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 EXPOSE 80
