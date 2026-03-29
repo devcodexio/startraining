@@ -101,21 +101,15 @@ class PostulationController {
                 if (move_uploaded_file($_FILES['url_cv_pdf']['tmp_name'], $uploadDir . $fileName)) {
                     $cvPath = 'uploads/cvs/' . $fileName;
                 } else {
-                    header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("No se pudo guardar el archivo físicamente en el servidor."));
-                    exit;
+                    throw new \Exception("No se pudo guardar el archivo físicamente en el servidor.");
                 }
             }
-        } catch (\Exception $e) {
-            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("Fallo en la nube: " . $e->getMessage()));
-            exit;
-        }
 
-        // 2. Guardar en DB con match=0, estado en_espera (la IA se activa manualmente)
-        $db = Database::getConnection();
-        $sql = "INSERT INTO postulaciones (vacante_id, dni, nombre_completo, correo_estudiante, celular, url_cv_pdf, match_porcentaje, estado_postulacion)
-                VALUES (?, ?, ?, ?, ?, ?, 0, 'en_espera')";
+            // 2. Guardar en DB con match=0, estado en_espera (la IA se activa manualmente)
+            $db = Database::getConnection();
+            $sql = "INSERT INTO postulaciones (vacante_id, dni, nombre_completo, correo_estudiante, celular, url_cv_pdf, match_porcentaje, estado_postulacion)
+                    VALUES (?, ?, ?, ?, ?, ?, 0, 'en_espera')";
 
-        try {
             $stmt = $db->prepare($sql);
             $stmt->execute([$vacante_id, $dni, $nombre, $email, $celular, $cvPath]);
             $postulacion_id = $db->lastInsertId();
@@ -123,7 +117,8 @@ class PostulationController {
             header("Location: /vacante/$vacante_id?postulado=success");
             exit;
         } catch (\Exception $e) {
-            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode($e->getMessage()));
+            $msg = substr($e->getMessage(), 0, 500); // 🔹 Evitar headers gigantes que confundan a Cloudflare
+            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("Fallo en la nube: " . $msg));
             exit;
         }
     }
