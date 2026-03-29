@@ -22,18 +22,24 @@ class MailService {
         try {
             // Configuración del servidor
             $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
+            
+            // 🔹 Habilitar debug temporal para ver el error exacto en pantalla (solo si falla)
+            // $mail->SMTPDebug = SMTP::DEBUG_SERVER; 
+
+            // 🔹 Forzamos la resolución de host a IPv4 (Soluciona el error 101: Network is unreachable)
+            $mail->Host       = gethostbyname('smtp.gmail.com'); 
             $mail->SMTPAuth   = true;
             $mail->Username   = $_ENV['GMAIL_USER'] ?? '';
             $mail->Password   = $_ENV['GMAIL_PASS'] ?? '';
             
-            // Gmail soporta 587 (TLS) y 465 (SSL). El puerto 465 suele ser más compatible con firewalls locales.
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // SSL
-            $mail->Port       = 465;
+            // Revertimos a 587 pero mantenemos las opciones de SSL flexibles
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
             
+            $mail->Timeout    = 30; // Aumentamos timeout
             $mail->CharSet    = 'UTF-8';
 
-            // 🔹 Opciones de SSL (Necesario si el servidor local no tiene certificados actualizados)
+            // Opciones de SSL para entornos locales (Laragon/XAMPP)
             $mail->SMTPOptions = [
                 'ssl' => [
                     'verify_peer' => false,

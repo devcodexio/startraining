@@ -59,8 +59,10 @@ $totalCompanies = count($companies);
                             <td><span class="badge badge-primary"><?= $c['ruc'] ?></span></td>
                             <td class="text-muted small"><?= htmlspecialchars($c['sector'] ?: 'General') ?></td>
                             <td id="status-cell-<?= $c['id'] ?>">
-                                <?php if ($isBlocked): ?>
+                                <?php if ($c['estado'] === 'bloqueado'): ?>
                                     <span class="badge badge-danger">BLOQUEADO</span>
+                                <?php elseif ($c['estado'] === 'pendiente'): ?>
+                                    <span class="badge badge-warning">PENDIENTE</span>
                                 <?php else: ?>
                                     <span class="badge badge-success">ACTIVO</span>
                                 <?php endif; ?>
@@ -70,13 +72,23 @@ $totalCompanies = count($companies);
                                     <a href="/admin/empresas/detalle/<?= $c['id'] ?>" class="btn-ghost py-2 px-3" style="font-size: 0.75rem; border-radius: 10px;" title="Ver Detalle">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <button id="toggle-btn-<?= $c['id'] ?>" 
-                                            class="<?= $isBlocked ? 'btn-futuristic' : 'btn-danger-ghost' ?> py-2 px-3" 
-                                            style="font-size: 0.75rem; border-radius: 10px;" 
-                                            onclick="toggleCompanyStatus(<?= $c['id'] ?>, '<?= $c['estado'] ?>')">
-                                        <i class="fas <?= $isBlocked ? 'fa-unlock' : 'fa-lock' ?>"></i>
-                                        <?= $isBlocked ? 'Activar' : 'Bloquear' ?>
-                                    </button>
+                                    
+                                    <?php if ($c['estado'] === 'pendiente'): ?>
+                                        <button id="toggle-btn-<?= $c['id'] ?>" 
+                                                class="btn-futuristic py-2 px-3" 
+                                                style="font-size: 0.75rem; border-radius: 10px;" 
+                                                onclick="toggleCompanyStatus(<?= $c['id'] ?>, 'pendiente')">
+                                            <i class="fas fa-check"></i> Aprobar
+                                        </button>
+                                    <?php else: ?>
+                                        <button id="toggle-btn-<?= $c['id'] ?>" 
+                                                class="<?= $isBlocked ? 'btn-futuristic' : 'btn-danger-ghost' ?> py-2 px-3" 
+                                                style="font-size: 0.75rem; border-radius: 10px;" 
+                                                onclick="toggleCompanyStatus(<?= $c['id'] ?>, '<?= $c['estado'] ?>')">
+                                            <i class="fas <?= $isBlocked ? 'fa-unlock' : 'fa-lock' ?>"></i>
+                                            <?= $isBlocked ? 'Activar' : 'Bloquear' ?>
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -88,10 +100,17 @@ $totalCompanies = count($companies);
 
     <script>
     async function toggleCompanyStatus(id, currentStatus) {
-        const newStatus = (currentStatus === 'activo') ? 'bloqueado' : 'activo';
-        const confirmMsg = (newStatus === 'bloqueado') 
-            ? '¿Estás seguro de bloquear esta empresa? No podrá publicar vacantes ni ver postulantes.'
-            : '¿Activar acceso para esta empresa?';
+        let newStatus, confirmMsg;
+        
+        if (currentStatus === 'pendiente') {
+            newStatus = 'activo';
+            confirmMsg = '¿Deseas APROBAR a esta empresa para que pueda empezar a publicar vacantes?';
+        } else {
+            newStatus = (currentStatus === 'activo') ? 'bloqueado' : 'activo';
+            confirmMsg = (newStatus === 'bloqueado') 
+                ? '¿Estás seguro de BLOQUEAR esta empresa? No podrá acceder a su cuenta.'
+                : '¿Reactivar acceso para esta empresa?';
+        }
 
         if (!confirm(confirmMsg)) return;
 

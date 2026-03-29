@@ -34,10 +34,15 @@ class AuthController {
         $empresa = $stmt->fetch();
 
         if ($empresa) {
-            // Check if blocked
+            // El administrador debe aprobar la empresa para que pueda loguearse
             if ($empresa['estado'] === 'bloqueado') {
                 header('Location: /login?error=account_blocked');
-                return;
+                exit;
+            }
+
+            if ($empresa['estado'] === 'pendiente') {
+                header('Location: /login?error=account_pending');
+                exit;
             }
 
             if (password_verify($password, $empresa['password_hash'])) {
