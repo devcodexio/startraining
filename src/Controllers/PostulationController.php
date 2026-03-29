@@ -381,6 +381,9 @@ class PostulationController {
             return;
         }
 
+        $gmailUser = $_ENV['GMAIL_USER'] ?? '';
+        $gmailPass = $_ENV['GMAIL_PASS'] ?? '';
+
         // Llamada al Webhook de n8n
         $ch = curl_init($n8nEmailWebhook);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -388,11 +391,13 @@ class PostulationController {
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
         
         $payload = [
-            'correo'   => $post['correo_estudiante'],
-            'nombre'   => $post['nombre_completo'],
-            'vacante'  => $post['titulo_puesto'],
-            'asunto'   => $subject,
-            'mensaje'  => $message
+            'correo'     => $post['correo_estudiante'],
+            'nombre'     => $post['nombre_completo'],
+            'vacante'    => $post['titulo_puesto'],
+            'asunto'     => $subject,
+            'mensaje'    => $message,
+            'gmail_user' => $gmailUser,
+            'gmail_pass' => $gmailPass
         ];
         
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
