@@ -114,7 +114,7 @@ class ExternalApiService {
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $postData,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 120, // Aumentado a 2 minutos
+            CURLOPT_TIMEOUT        => 180, // Aumentado a 3 minutos
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTPHEADER     => [
@@ -139,17 +139,26 @@ class ExternalApiService {
         if (empty($response) || trim($response) === '') {
             return [
                 'success' => false, 
-                'error' => 'n8n aceptó el archivo (200) pero no envió un análisis. Verifica el flujo n8n.'
+                'error' => 'n8n aceptó el archivo (200) pero no envió contenido. Asegúrate de que el flujo de n8n termine con un nodo "Respond to Webhook".'
             ];
         }
 
         $data = json_decode($response, true);
-        if (is_array($data) && isset($data[0])) $data = $data[0];
+        
+        // Si no es JSON válido o no es un array, mostrar lo que devolvió n8n
+        if (!is_array($data)) {
+            return [
+                'success' => false,
+                'error' => 'n8n no devolvió JSON válido. Respuesta recibida: ' . substr(strip_tags($response), 0, 200) . '...'
+            ];
+        }
+
+        if (isset($data[0]) && is_array($data[0])) $data = $data[0];
 
         if ($httpCode >= 200 && $httpCode < 300) {
             // Mapeo flexible de campos de IA
-            $puntaje     = $data['puntaje'] ?? $data['score'] ?? $data['match'] ?? 0;
-            $descripcion = $data['descripcion'] ?? $data['notes'] ?? $data['analisis'] ?? $data['output'] ?? 'Análisis completado sin comentarios.';
+            $puntaje     = $data['puntaje'] ?? $data['score'] ?? $data['match'] ?? $data['puntaje_ia'] ?? 0;
+            $descripcion = $data['descripcion'] ?? $data['notes'] ?? $data['analisis'] ?? $data['output'] ?? $data['analysis'] ?? 'Análisis completado sin comentarios.';
 
             // Normalización: si el puntaje viene entre 0 y 1, multiplicamos por 100
             if ($puntaje > 0 && $puntaje <= 1) {
