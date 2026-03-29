@@ -93,11 +93,10 @@ class ExternalApiService {
             $localFilePathForCurl = $tempFileToDelete;
         }
 
-        // Instanciamos un CURLFile por cada clave para evitar errores de lectura de cURL
+        // Enviamos el PDF bajo la clave 'file' únicamente. 
+        // Enviar el mismo archivo físico bajo múltiples claves al mismo tiempo confunde a cURL en PHP y causa el error "Is a Directory".
         $postData = [
             'file'         => new \CURLFile($localFilePathForCurl, 'application/pdf', 'curriculum.pdf'),
-            'cv'           => new \CURLFile($localFilePathForCurl, 'application/pdf', 'curriculum_cv.pdf'),
-            'cv_pdf'       => new \CURLFile($localFilePathForCurl, 'application/pdf', 'curriculum_cv_pdf.pdf'),
             'requisitos'   => $requisitos,
             'requirements' => $requisitos,
         ];
