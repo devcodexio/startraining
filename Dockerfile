@@ -8,6 +8,10 @@ RUN apt-get update && apt-get install -y \
 # 🔹 Ahora sí instalar extensiones PHP
 RUN docker-php-ext-install pdo pdo_pgsql
 
+RUN a2enmod rewrite
+RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+
+
 # 🔹 Cambiar DocumentRoot a /public
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 
@@ -19,7 +23,5 @@ COPY . /var/www/html/
 
 # 🔹 Permisos
 RUN chown -R www-data:www-data /var/www/html
-RUN a2enmod rewrite
-RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 EXPOSE 80
