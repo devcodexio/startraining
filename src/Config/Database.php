@@ -16,7 +16,7 @@ class Database
                 $url = getenv("DATABASE_URL");
 
                 if (!$url) {
-                    die("DATABASE_URL no está configurada");
+                    throw new \Exception("DATABASE_URL no está configurada");
                 }
 
                 $db = parse_url($url);
@@ -31,7 +31,7 @@ class Database
                 self::$conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
             } catch (PDOException $e) {
-                die("Connection error: " . $e->getMessage());
+                throw new \Exception("Database connection error: " . $e->getMessage());
             }
         }
 
