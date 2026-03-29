@@ -81,13 +81,12 @@ class ExternalApiService {
             return ['success' => false, 'error' => 'Archivo no encontrado o inválido: ' . $cvFilePath];
         }
 
-        $cvFile = new \CURLFile($cvFilePath, 'application/pdf', 'curriculum.pdf');
-
-        // Intentamos enviar múltiples alias para las claves, por si n8n espera uno específico
+        // Instanciamos un CURLFile por cada clave para evitar errores de lectura de cURL (como errno=21 Is a directory).
+        // cURL tiene problemas al reutilizar el mismo objeto CURLFile en múltiples campos del array de postData.
         $postData = [
-            'file'         => $cvFile,
-            'cv'           => $cvFile, // Shorthand
-            'cv_pdf'       => $cvFile,
+            'file'         => new \CURLFile($cvFilePath, 'application/pdf', 'curriculum.pdf'),
+            'cv'           => new \CURLFile($cvFilePath, 'application/pdf', 'curriculum_cv.pdf'),
+            'cv_pdf'       => new \CURLFile($cvFilePath, 'application/pdf', 'curriculum_cv_pdf.pdf'),
             'requisitos'   => $requisitos,
             'requirements' => $requisitos,
         ];
