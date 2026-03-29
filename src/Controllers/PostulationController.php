@@ -336,7 +336,7 @@ class PostulationController {
     }
 
     /**
-     * Envía un correo al postulante usando Resend API.
+     * Envía un correo al postulante usando un Webhook de n8n (conectado a Gmail).
      * POST /api/postulacion/send-email
      */
     public function sendEmail() {
@@ -357,7 +357,10 @@ class PostulationController {
         }
 
         $db = Database::getConnection();
-        $stmt = $db->prepare("SELECT correo_estudiante, nombre_completo, estado_postulacion FROM postulaciones WHERE id = ?");
+        $stmt = $db->prepare("SELECT p.correo_estudiante, p.nombre_completo, p.estado_postulacion, v.titulo_puesto 
+                               FROM postulaciones p
+                               JOIN vacantes v ON p.vacante_id = v.id
+                               WHERE p.id = ?");
         $stmt->execute([$id]);
         $post = $stmt->fetch();
 
@@ -372,38 +375,27 @@ class PostulationController {
             return;
         }
 
-        $apiKey = $_ENV['RESEND_API_KEY'] ?? '';
-        if (empty($apiKey)) {
-            echo json_encode(['success' => false, 'error' => 'No hay RESEND_API_KEY definida en el servidor.']);
+        $n8nEmailWebhook = $_ENV['N8N_EMAIL_WEBHOOK_URL'] ?? '';
+        if (empty($n8nEmailWebhook)) {
+            echo json_encode(['success' => false, 'error' => 'No hay N8N_EMAIL_WEBHOOK_URL definida en el archivo .env']);
             return;
         }
 
-        // Llamada a la API de Resend vía cURL
-        $ch = curl_init('https://api.resend.com/emails');
+        // Llamada al Webhook de n8n
+        $ch = curl_init($n8nEmailWebhook);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Authorization: Bearer ' . $apiKey,
-            'Content-Type: application/json'
-        ]);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
         
-        $emailData = [
-            'from'    => 'StarTraining <onboarding@resend.dev>', // Usar dominio verificado o el de prueba de Resend
-            'to'      => [$post['correo_estudiante']],
-            'subject' => $subject,
-            'html'    => "
-                <div style='font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #eee; border-radius: 10px; padding: 20px; color: #333;'>
-                    <h2 style='color: #007bff;'>¡Hola, {$post['nombre_completo']}! 👋</h2>
-                    <p style='font-size: 16px; line-height: 1.6;'>Tenemos noticias sobre tu postulación:</p>
-                    <div style='background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;'>
-                        " . nl2br(htmlspecialchars($message)) . "
-                    </div>
-                    <p style='font-size: 14px; color: #777;'>Saludos cordiales,<br>El equipo de StarTraining</p>
-                </div>
-            "
+        $payload = [
+            'correo'   => $post['correo_estudiante'],
+            'nombre'   => $post['nombre_completo'],
+            'vacante'  => $post['titulo_puesto'],
+            'asunto'   => $subject,
+            'mensaje'  => $message
         ];
         
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($emailData));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
@@ -411,7 +403,7 @@ class PostulationController {
         if ($httpCode >= 200 && $httpCode < 300) {
             echo json_encode(['success' => true]);
         } else {
-            echo json_encode(['success' => false, 'error' => 'Error de Resend: ' . $response]);
+            echo json_encode(['success' => false, 'error' => 'Error de n8n (HTTP ' . $httpCode . '): ' . $response]);
         }
     }
 }
