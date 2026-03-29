@@ -28,34 +28,49 @@ class PostulationController {
         $fileName = 'cv_' . $dni . '_' . time() . '.' . $ext;
         
         try {
-            if (isset($_ENV['CLOUDINARY_URL']) && !empty($_ENV['CLOUDINARY_URL'])) {
+            $cloudinaryUrl = $_ENV['CLOUDINARY_URL'] ?? '';
+            $uploadPreset  = $_ENV['CLOUDINARY_UPLOAD_PRESET'] ?? ''; // Opcional, para Unsigned uploads
+
+            if (!empty($cloudinaryUrl)) {
                 // Modo Producción: Usar Cloudinary sin SDK (vía cURL REST)
                 // CLOUDINARY_URL format: cloudinary://api_key:api_secret@cloud_name
-                $url = $_ENV['CLOUDINARY_URL'];
-                preg_match('/cloudinary:\/\/([^:]+):([^@]+)@(.+)/', $url, $matches);
+                preg_match('/cloudinary:\/\/([^:]+):([^@]+)@(.+)/', $cloudinaryUrl, $matches);
                 if (count($matches) === 4) {
                     $apiKey     = $matches[1];
                     $apiSecret  = $matches[2];
-                    $cloudName  = $matches[3];
-                    
-                    $timestamp = time();
-                    $folder    = 'startraining/cvs';
-                    $public_id = 'cv_' . $dni . '_' . $timestamp;
-                    
-                    // Firmar la petición
-                    $strToSign = "folder=$folder&public_id=$public_id&timestamp=$timestamp" . $apiSecret;
-                    $signature = sha1($strToSign);
-                    
-                    $cfile = new \CURLFile($_FILES['url_cv_pdf']['tmp_name'], 'application/pdf', $fileName);
+                    $cloudName  = trim($matches[3]);
+                    $timestamp  = time();
+                    $folder     = 'startraining/cvs';
+                    $public_id  = 'cv_' . $dni . '_' . $timestamp;
                     
                     $postData = [
-                        'file'      => $cfile,
-                        'api_key'   => $apiKey,
-                        'timestamp' => $timestamp,
-                        'signature' => $signature,
-                        'folder'    => $folder,
-                        'public_id' => $public_id
+                        'file' => new \CURLFile($_FILES['url_cv_pdf']['tmp_name'], 'application/pdf', $fileName),
                     ];
+
+                    if (!empty($uploadPreset)) {
+                        // MODO UNSIGNED (Más flexible si las API Keys tienen permisos restringidos)
+                        $postData['upload_preset'] = $uploadPreset;
+                        $postData['folder']        = $folder;
+                        $postData['public_id']     = $public_id;
+                    } else {
+                        // MODO SIGNED (Estándar, requiere API Key con permiso 'Upload')
+                        $params = [
+                            'folder'    => $folder,
+                            'public_id' => $public_id,
+                            'timestamp' => $timestamp
+                        ];
+                        ksort($params);
+                        $strToSign = "";
+                        foreach ($params as $k => $v) { $strToSign .= "$k=$v&"; }
+                        $strToSign = rtrim($strToSign, "&") . $apiSecret;
+                        $signature = sha1($strToSign);
+
+                        $postData['api_key']   = $apiKey;
+                        $postData['timestamp'] = $timestamp;
+                        $postData['signature'] = $signature;
+                        $postData['folder']    = $folder;
+                        $postData['public_id'] = $public_id;
+                    }
                     
                     $ch = curl_init("https://api.cloudinary.com/v1_1/$cloudName/auto/upload");
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -69,10 +84,14 @@ class PostulationController {
                     if (isset($json['secure_url'])) {
                         $cvPath = $json['secure_url'];
                     } else {
-                        throw new \Exception("Error Cloudinary: " . ($json['error']['message'] ?? 'Desconocido'));
+                        $errorMsg = $json['error']['message'] ?? 'Error desconocido';
+                        if (strpos($errorMsg, 'actions=["create"]') !== false) {
+                            $errorMsg .= " (Tu Clave API no tiene permisos de Upload. Sugerencia: Crea un 'Unsigned Upload Preset' en el panel de Cloudinary y configúralo en .env como CLOUDINARY_UPLOAD_PRESET=tu_preset)";
+                        }
+                        throw new \Exception("Error Cloudinary: $errorMsg");
                     }
                 } else {
-                    throw new \Exception("Formato de CLOUDINARY_URL inválido.");
+                    throw new \Exception("Formato de CLOUDINARY_URL inválido o incompleto.");
                 }
             } else {
                 // Modo Local / Desarrollo
