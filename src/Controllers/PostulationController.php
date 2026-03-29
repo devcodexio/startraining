@@ -26,16 +26,68 @@ class PostulationController {
 
         $ext = pathinfo($_FILES['url_cv_pdf']['name'], PATHINFO_EXTENSION);
         $fileName = 'cv_' . $dni . '_' . time() . '.' . $ext;
-        $uploadDir = __DIR__ . '/../../public/uploads/cvs/';
         
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-        
-        if (move_uploaded_file($_FILES['url_cv_pdf']['tmp_name'], $uploadDir . $fileName)) {
-            $cvPath = 'uploads/cvs/' . $fileName;
-        } else {
-            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("No se pudo guardar el archivo físico en el servidor (problema de permisos)."));
+        try {
+            if (isset($_ENV['CLOUDINARY_URL']) && !empty($_ENV['CLOUDINARY_URL'])) {
+                // Modo Producción: Usar Cloudinary sin SDK (vía cURL REST)
+                // CLOUDINARY_URL format: cloudinary://api_key:api_secret@cloud_name
+                $url = $_ENV['CLOUDINARY_URL'];
+                preg_match('/cloudinary:\/\/([^:]+):([^@]+)@(.+)/', $url, $matches);
+                if (count($matches) === 4) {
+                    $apiKey     = $matches[1];
+                    $apiSecret  = $matches[2];
+                    $cloudName  = $matches[3];
+                    
+                    $timestamp = time();
+                    $folder    = 'startraining/cvs';
+                    $public_id = 'cv_' . $dni . '_' . $timestamp;
+                    
+                    // Firmar la petición
+                    $strToSign = "folder=$folder&public_id=$public_id&timestamp=$timestamp" . $apiSecret;
+                    $signature = sha1($strToSign);
+                    
+                    $cfile = new \CURLFile($_FILES['url_cv_pdf']['tmp_name'], 'application/pdf', $fileName);
+                    
+                    $postData = [
+                        'file'      => $cfile,
+                        'api_key'   => $apiKey,
+                        'timestamp' => $timestamp,
+                        'signature' => $signature,
+                        'folder'    => $folder,
+                        'public_id' => $public_id
+                    ];
+                    
+                    $ch = curl_init("https://api.cloudinary.com/v1_1/$cloudName/auto/upload");
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                    $response = curl_exec($ch);
+                    curl_close($ch);
+                    
+                    $json = json_decode($response, true);
+                    if (isset($json['secure_url'])) {
+                        $cvPath = $json['secure_url'];
+                    } else {
+                        throw new \Exception("Error Cloudinary: " . ($json['error']['message'] ?? 'Desconocido'));
+                    }
+                } else {
+                    throw new \Exception("Formato de CLOUDINARY_URL inválido.");
+                }
+            } else {
+                // Modo Local / Desarrollo
+                $uploadDir = __DIR__ . '/../../public/uploads/cvs/';
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+                
+                if (move_uploaded_file($_FILES['url_cv_pdf']['tmp_name'], $uploadDir . $fileName)) {
+                    $cvPath = 'uploads/cvs/' . $fileName;
+                } else {
+                    header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("No se pudo guardar el archivo físicamente en el servidor."));
+                    exit;
+                }
+            }
+        } catch (\Exception $e) {
+            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("Fallo en la nube: " . $e->getMessage()));
             exit;
         }
 
@@ -93,10 +145,16 @@ class PostulationController {
             return;
         }
 
-        // Ruta del CV en disco
-        $cvFilePath = __DIR__ . '/../../public/' . $post['url_cv_pdf'];
-        if (empty($post['url_cv_pdf']) || !is_file($cvFilePath)) {
-            echo json_encode(['success' => false, 'error' => 'Archivo CV no encontrado o inválido en el servidor']);
+        // Ruta del CV (Cloudinary URL o Disco local)
+        $urlCv = $post['url_cv_pdf'] ?? '';
+        if (empty($urlCv)) {
+            echo json_encode(['success' => false, 'error' => 'Vacío o sin CV adjunto en la base de datos.']);
+            return;
+        }
+
+        $cvFilePath = filter_var($urlCv, FILTER_VALIDATE_URL) ? $urlCv : __DIR__ . '/../../public/' . $urlCv;
+        if (!filter_var($urlCv, FILTER_VALIDATE_URL) && !is_file($cvFilePath)) {
+            echo json_encode(['success' => false, 'error' => 'Archivo CV local no encontrado o inválido.']);
             return;
         }
 
@@ -152,14 +210,15 @@ class PostulationController {
         $fail = 0;
 
         foreach ($pendientes as $post) {
-            if (empty($post['url_cv_pdf'])) {
+            $urlCv = $post['url_cv_pdf'] ?? '';
+            if (empty($urlCv)) {
                 $fail++;
                 continue;
             }
 
-            $cvFilePath = __DIR__ . '/../../public/' . $post['url_cv_pdf'];
+            $cvFilePath = filter_var($urlCv, FILTER_VALIDATE_URL) ? $urlCv : __DIR__ . '/../../public/' . $urlCv;
 
-            if (!is_file($cvFilePath)) {
+            if (!filter_var($urlCv, FILTER_VALIDATE_URL) && !is_file($cvFilePath)) {
                 $fail++;
                 continue;
             }
