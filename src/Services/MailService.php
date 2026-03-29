@@ -26,9 +26,21 @@ class MailService {
             $mail->SMTPAuth   = true;
             $mail->Username   = $_ENV['GMAIL_USER'] ?? '';
             $mail->Password   = $_ENV['GMAIL_PASS'] ?? '';
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+            
+            // Gmail soporta 587 (TLS) y 465 (SSL). El puerto 465 suele ser más compatible con firewalls locales.
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // SSL
+            $mail->Port       = 465;
+            
             $mail->CharSet    = 'UTF-8';
+
+            // 🔹 Opciones de SSL (Necesario si el servidor local no tiene certificados actualizados)
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ];
 
             // Destinatarios
             $mail->setFrom($_ENV['GMAIL_USER'] ?? '', 'StarTraining Platform');
