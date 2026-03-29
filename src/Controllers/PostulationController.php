@@ -52,9 +52,11 @@ class PostulationController {
                         $postData['upload_preset'] = $uploadPreset;
                         $postData['folder']        = $folder;
                         $postData['public_id']     = $public_id;
+                        $postData['access_mode']   = 'public'; // 🔹 Asegurar que sea público
                     } else {
                         // MODO SIGNED (Estándar, requiere API Key con permiso 'Upload')
                         $params = [
+                            'access_mode' => 'public', // 🔹 Incluir en la firma
                             'folder'    => $folder,
                             'public_id' => $public_id,
                             'timestamp' => $timestamp
@@ -65,11 +67,12 @@ class PostulationController {
                         $strToSign = rtrim($strToSign, "&") . $apiSecret;
                         $signature = sha1($strToSign);
 
-                        $postData['api_key']   = $apiKey;
-                        $postData['timestamp'] = $timestamp;
-                        $postData['signature'] = $signature;
-                        $postData['folder']    = $folder;
-                        $postData['public_id'] = $public_id;
+                        $postData['api_key']     = $apiKey;
+                        $postData['timestamp']   = $timestamp;
+                        $postData['signature']   = $signature;
+                        $postData['folder']      = $folder;
+                        $postData['public_id']   = $public_id;
+                        $postData['access_mode'] = 'public'; // 🔹 Asegurar que sea público
                     }
                     
                     $ch = curl_init("https://api.cloudinary.com/v1_1/$cloudName/auto/upload");
