@@ -105,6 +105,7 @@ class ExternalApiService {
         // Enviar el mismo archivo físico bajo múltiples claves al mismo tiempo confunde a cURL en PHP y causa el error "Is a Directory".
         $postData = [
             'file'         => new \CURLFile($localFilePathForCurl, 'application/pdf', 'curriculum.pdf'),
+            'cv'           => new \CURLFile($localFilePathForCurl, 'application/pdf', 'curriculum.pdf'),
             'requisitos'   => $requisitos,
             'requirements' => $requisitos,
         ];
