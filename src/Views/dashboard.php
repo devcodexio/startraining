@@ -157,6 +157,7 @@ $firstName = explode(' ', $userName)[0];
             </div>
         </div>
 
+        <?php require_once __DIR__ . '/../Layouts/Footer.php'; ?>
     </main>
 </body>
 </html>

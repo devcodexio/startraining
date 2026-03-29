@@ -103,8 +103,8 @@ $imgSrc = $c['foto_perfil'] ?: $avatarFallback;
                         <h3 class="section-title">Detalles de Empresa</h3>
                         
                         <div class="form-group">
-                            <label class="form-label">Razón Social / Nombre</label>
-                            <input type="text" class="form-input" value="<?= htmlspecialchars($c['nombre_comercial'] ?: '-') ?>" readonly style="opacity: 0.6; cursor: not-allowed;">
+                            <label class="form-label">Razón Social / Nombre Comercial</label>
+                            <input type="text" name="nombre_comercial" class="form-input" value="<?= htmlspecialchars($c['nombre_comercial'] ?: '-') ?>" required>
                         </div>
 
                         <div class="form-group">

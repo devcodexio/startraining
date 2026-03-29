@@ -24,6 +24,18 @@ class CompanyController {
             return;
         }
 
+        if ($model->getByEmail($_POST['correo_contacto'])) {
+            header('Location: /register-company?error=email_exists');
+            return;
+        }
+
+        // Validate phone: exactly 9 digits
+        $telefono = $_POST['telefono'] ?? '';
+        if (strlen($telefono) !== 9 || !ctype_digit($telefono)) {
+            header('Location: /register-company?error=phone_invalid');
+            return;
+        }
+
         if ($_POST['password'] !== $_POST['password_confirm']) {
             header('Location: /register-company?error=pass_mismatch');
             return;
@@ -78,15 +90,24 @@ class CompanyController {
             }
         }
 
+        $nombre_comercial = $_POST['nombre_comercial'] ?? '';
         $sector         = $_POST['sector'] ?? '';
         $correo         = $_POST['correo_contacto'] ?? '';
         $telefono       = $_POST['telefono'] ?? '';
         $direccion      = $_POST['direccion'] ?? '';
 
+        // Validate phone: exactly 9 digits
+        if (strlen($telefono) !== 9 || !ctype_digit($telefono)) {
+            header('Location: /company/profile?error=phone_invalid');
+            exit;
+        }
+
         $upd = $db->prepare("UPDATE empresas 
-                             SET sector = ?, correo_contacto = ?, telefono = ?, direccion = ?, foto_perfil = ?
+                             SET nombre_comercial = ?, sector = ?, correo_contacto = ?, telefono = ?, direccion = ?, foto_perfil = ?
                              WHERE id = ?");
-        $upd->execute([$sector, $correo, $telefono, $direccion, $foto_perfil, $companyId]);
+        $upd->execute([$nombre_comercial, $sector, $correo, $telefono, $direccion, $foto_perfil, $companyId]);
+
+        $_SESSION['user_nombre'] = $nombre_comercial;
 
         header('Location: /company/profile?success=1');
         exit;

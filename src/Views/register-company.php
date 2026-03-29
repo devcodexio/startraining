@@ -73,7 +73,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Teléfono</label>
-                            <input type="text" id="telefono" name="telefono" class="form-input" placeholder="987 654 321">
+                            <input type="text" id="telefono" name="telefono" class="form-input" required maxlength="9" minlength="9" pattern="[0-9]{9}" oninput="this.value=this.value.replace(/\D/g,'')" placeholder="987654321">
                         </div>
                     </div>
 

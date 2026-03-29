@@ -79,5 +79,6 @@ $vacancies = $vacancyModel->getAll(['search' => $search, 'carrera' => $carrera, 
         <?php endforeach; ?>
     </div>
 
+    <?php require_once __DIR__ . '/../Layouts/Footer.php'; ?>
 </body>
 </html>

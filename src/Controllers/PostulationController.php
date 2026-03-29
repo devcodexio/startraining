@@ -16,6 +16,29 @@ class PostulationController {
         $celular    = $_POST['celular'];
         $email      = $_POST['correo_estudiante'];
 
+        // 1. Validaciones de Duplicados, Celular y Correo Institucional
+        $db = Database::getConnection();
+
+        // Celular: exactamente 9 dígitos
+        if (strlen($celular) !== 9 || !ctype_digit($celular)) {
+            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("El celular debe tener exactamente 9 dígitos numéricos."));
+            exit;
+        }
+
+        // Correo Estudiante: Solo dominios .edu.pe
+        if (!preg_match('/\.edu\.pe$/i', $email)) {
+            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("Solo se permite postular con un correo institucional (.edu.pe)"));
+            exit;
+        }
+
+        // Duplicado DNI para esta vacante
+        $stmt_check = $db->prepare("SELECT id FROM postulaciones WHERE vacante_id = ? AND (dni = ? OR correo_estudiante = ?)");
+        $stmt_check->execute([$vacante_id, $dni, $email]);
+        if ($stmt_check->fetch()) {
+            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("Usted ya cuenta con una postulación registrada para esta vacante."));
+            exit;
+        }
+
         // 1. Manejo de Archivo (CV)
         $cvPath = '';
         if (!isset($_FILES['url_cv_pdf']) || $_FILES['url_cv_pdf']['error'] !== 0) {

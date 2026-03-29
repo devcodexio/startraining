@@ -121,14 +121,14 @@ if (!$v) { header('Location: /'); exit; }
                     </div>
                     <div class="form-group">
                         <label class="form-label">Celular</label>
-                        <input type="tel" name="celular" class="form-input" placeholder="987 654 321" required maxlength="12">
+                        <input type="tel" name="celular" class="form-input" placeholder="987654321" required maxlength="9" minlength="9" pattern="[0-9]{9}" oninput="this.value=this.value.replace(/\D/g,'')">
                     </div>
                 </div>
                 
                 <!-- Email -->
                 <div class="form-group">
-                    <label class="form-label">Correo Institucional</label>
-                    <input type="email" name="correo_estudiante" class="form-input" placeholder="usuario@universidad.edu.pe" required>
+                    <label class="form-label">Correo Institucional (.edu.pe)</label>
+                    <input type="email" name="correo_estudiante" class="form-input" placeholder="usuario@universidad.edu.pe" required pattern=".+@.+\.edu\.pe$">
                 </div>
 
                 <!-- CV Upload -->
