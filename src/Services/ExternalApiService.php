@@ -77,16 +77,27 @@ class ExternalApiService {
     public static function analizarCvConN8n(string $cvFilePath, string $requisitos): array {
         $webhookUrl = 'https://n8n-dqmewasf.us-west-1.clawcloudrun.com/webhook/analizar-cv';
 
-        if (!is_file($cvFilePath)) {
+        $isFileUrl = filter_var($cvFilePath, FILTER_VALIDATE_URL);
+        
+        if (!$isFileUrl && !is_file($cvFilePath)) {
             return ['success' => false, 'error' => 'Archivo no encontrado o inválido: ' . $cvFilePath];
         }
 
-        // Instanciamos un CURLFile por cada clave para evitar errores de lectura de cURL (como errno=21 Is a directory).
-        // cURL tiene problemas al reutilizar el mismo objeto CURLFile en múltiples campos del array de postData.
+        $localFilePathForCurl = $cvFilePath;
+        $tempFileToDelete = null;
+
+        if ($isFileUrl) {
+            // Descargar el PDF de Cloudinary temporalmente
+            $tempFileToDelete = tempnam(sys_get_temp_dir(), 'n8n_cv_') . '.pdf';
+            file_put_contents($tempFileToDelete, file_get_contents($cvFilePath));
+            $localFilePathForCurl = $tempFileToDelete;
+        }
+
+        // Instanciamos un CURLFile por cada clave para evitar errores de lectura de cURL
         $postData = [
-            'file'         => new \CURLFile($cvFilePath, 'application/pdf', 'curriculum.pdf'),
-            'cv'           => new \CURLFile($cvFilePath, 'application/pdf', 'curriculum_cv.pdf'),
-            'cv_pdf'       => new \CURLFile($cvFilePath, 'application/pdf', 'curriculum_cv_pdf.pdf'),
+            'file'         => new \CURLFile($localFilePathForCurl, 'application/pdf', 'curriculum.pdf'),
+            'cv'           => new \CURLFile($localFilePathForCurl, 'application/pdf', 'curriculum_cv.pdf'),
+            'cv_pdf'       => new \CURLFile($localFilePathForCurl, 'application/pdf', 'curriculum_cv_pdf.pdf'),
             'requisitos'   => $requisitos,
             'requirements' => $requisitos,
         ];
@@ -108,6 +119,10 @@ class ExternalApiService {
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlErr  = curl_error($ch);
         curl_close($ch);
+
+        if ($tempFileToDelete && is_file($tempFileToDelete)) {
+            unlink($tempFileToDelete);
+        }
 
         if ($curlErr) {
             return ['success' => false, 'error' => 'Falla de conexión: ' . $curlErr];
