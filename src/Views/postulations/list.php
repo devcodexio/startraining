@@ -171,7 +171,8 @@ $estadoMap = [
                         $color = matchColor($pct);
                         $estado = $estadoMap[$p['estado_postulacion']] ?? ['label' => $p['estado_postulacion'], 'class' => 'badge-warning'];
                         $isPending = $p['estado_postulacion'] === 'en_espera';
-                        $cvUrl = $p['url_cv_pdf'] ? (filter_var($p['url_cv_pdf'], FILTER_VALIDATE_URL) ? $p['url_cv_pdf'] : '/' . $p['url_cv_pdf']) : '';
+                        $urlRaw = trim($p['url_cv_pdf'] ?? '');
+                        $cvUrl = $urlRaw ? (str_starts_with($urlRaw, 'http') ? $urlRaw : '/' . $urlRaw) : '';
 
                         // Build safe JS strings for the modal
                         $jsDni          = addslashes($p['dni']);
