@@ -18,14 +18,25 @@ class PostulationController {
 
         // 1. Manejo de Archivo (CV)
         $cvPath = '';
-        if (isset($_FILES['url_cv_pdf']) && $_FILES['url_cv_pdf']['error'] === 0) {
-            $ext = pathinfo($_FILES['url_cv_pdf']['name'], PATHINFO_EXTENSION);
-            $fileName = 'cv_' . $dni . '_' . time() . '.' . $ext;
-            $uploadDir = __DIR__ . '/../../public/uploads/cvs/';
-            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-            if (move_uploaded_file($_FILES['url_cv_pdf']['tmp_name'], $uploadDir . $fileName)) {
-                $cvPath = 'uploads/cvs/' . $fileName;
-            }
+        if (!isset($_FILES['url_cv_pdf']) || $_FILES['url_cv_pdf']['error'] !== 0) {
+            $errCode = $_FILES['url_cv_pdf']['error'] ?? 'missing';
+            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("No se pudo subir el CV. Código de error: $errCode (Quizás el archivo pesa más de 2MB permitidos por el servidor)"));
+            exit;
+        }
+
+        $ext = pathinfo($_FILES['url_cv_pdf']['name'], PATHINFO_EXTENSION);
+        $fileName = 'cv_' . $dni . '_' . time() . '.' . $ext;
+        $uploadDir = __DIR__ . '/../../public/uploads/cvs/';
+        
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+        
+        if (move_uploaded_file($_FILES['url_cv_pdf']['tmp_name'], $uploadDir . $fileName)) {
+            $cvPath = 'uploads/cvs/' . $fileName;
+        } else {
+            header("Location: /vacante/$vacante_id?postulado=error&msg=" . urlencode("No se pudo guardar el archivo físico en el servidor (problema de permisos)."));
+            exit;
         }
 
         // 2. Guardar en DB con match=0, estado en_espera (la IA se activa manualmente)
