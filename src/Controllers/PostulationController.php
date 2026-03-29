@@ -165,7 +165,7 @@ class PostulationController {
         }
 
         // Ruta del CV (Cloudinary URL o Disco local)
-        $urlCv = $post['url_cv_pdf'] ?? '';
+        $urlCv = trim($post['url_cv_pdf'] ?? '');
         if (empty($urlCv)) {
             echo json_encode(['success' => false, 'error' => 'Vacío o sin CV adjunto en la base de datos.']);
             return;
@@ -229,7 +229,7 @@ class PostulationController {
         $fail = 0;
 
         foreach ($pendientes as $post) {
-            $urlCv = $post['url_cv_pdf'] ?? '';
+            $urlCv = trim($post['url_cv_pdf'] ?? '');
             if (empty($urlCv)) {
                 $fail++;
                 continue;
