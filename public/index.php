@@ -173,6 +173,18 @@ switch (true) {
         $ctrl->analizarTodos();
         break;
 
+    case ($path === $base_path . 'api/postulacion/update-status'):
+        \App\Middleware\AuthMiddleware::check('empresa');
+        $ctrl = new \App\Controllers\PostulationController();
+        $ctrl->updateStatus();
+        break;
+
+    case ($path === $base_path . 'api/postulacion/send-email'):
+        \App\Middleware\AuthMiddleware::check('empresa');
+        $ctrl = new \App\Controllers\PostulationController();
+        $ctrl->sendEmail();
+        break;
+
     case ($path === $base_path . 'company/profile-update'):
         \App\Middleware\AuthMiddleware::check('empresa');
         $ctrl = new \App\Controllers\CompanyController();
