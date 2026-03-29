@@ -89,7 +89,15 @@ class ExternalApiService {
         if ($isFileUrl) {
             // Descargar el PDF de Cloudinary temporalmente
             $tempFileToDelete = tempnam(sys_get_temp_dir(), 'n8n_cv_') . '.pdf';
-            file_put_contents($tempFileToDelete, file_get_contents($cvFilePath));
+            $fp = fopen($tempFileToDelete, 'w+');
+            $ch = curl_init(trim($cvFilePath)); // trim avoid issues with spaces or newlines
+            curl_setopt($ch, CURLOPT_FILE, $fp);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_exec($ch);
+            curl_close($ch);
+            fclose($fp);
             $localFilePathForCurl = $tempFileToDelete;
         }
 
