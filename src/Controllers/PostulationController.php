@@ -52,7 +52,8 @@ class PostulationController {
                         $postData['upload_preset'] = $uploadPreset;
                         $postData['folder']        = $folder;
                         $postData['public_id']     = $public_id;
-                        $postData['access_mode']   = 'public'; // 🔹 Asegurar que sea público
+                        // 🔹 Nota: En modo UNSIGNED NO se permite enviar 'access_mode'.
+                        // Se debe configurar el Preset en Cloudinary como 'Public'.
                     } else {
                         // MODO SIGNED (Estándar, requiere API Key con permiso 'Upload')
                         $params = [
