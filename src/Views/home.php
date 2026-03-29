@@ -30,8 +30,8 @@ $vacancies = $vacancyModel->getAll(['search' => $search, 'carrera' => $carrera, 
     <nav class="glass animate" style="position: fixed; top: 1.5rem; left: 1.5rem; right: 1.5rem; height: 85px; display: flex; align-items: center; justify-content: space-between; padding: 0 4rem; z-index: 1000; border-radius: 30px; border: 1px solid var(--border-glass);">
         <h2 class="logo-text m-0" style="font-size: 2rem;">StarTraining</h2>
         <div class="d-flex align-items-center gap-5">
-            <a href="/login" class="nav-item m-0 fw-800" style="background: transparent; color: var(--text-primary); text-decoration: none; font-size: 1.1rem; letter-spacing: 1px;">PORTAL EMPRESA</a>
-            <a href="/register-company" class="btn-futuristic" style="padding: 0.8rem 2rem; font-size: 0.9rem;">Empieza Ahora &rarr;</a>
+            <a href="/login" class="nav-item m-0 fw-800" style="background: transparent; color: var(--text-primary); text-decoration: none; font-size: 1.1rem; letter-spacing: 1px;">LOGIN</a>
+            <a href="/register-company" class="btn-futuristic" style="padding: 0.8rem 2rem; font-size: 0.9rem;">REGISTRARSE &rarr;</a>
         </div>
     </nav>
 
