@@ -75,7 +75,7 @@ class ExternalApiService {
      * Envía el PDF y requisitos al webhook de n8n.
      */
     public static function analizarCvConN8n(string $cvFilePath, string $requisitos): array {
-        $webhookUrl = 'https://n8n-dqmewasf.us-west-1.clawcloudrun.com/webhook/analizar-cv';
+        $webhookUrl = 'https://n8n-dqmewasf.us-west-1.clawcloudrun.com/webhook/analizar-cv-';
 
         $isFileUrl = filter_var($cvFilePath, FILTER_VALIDATE_URL);
         
