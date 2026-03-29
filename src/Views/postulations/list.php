@@ -31,22 +31,27 @@ $postulations = $stmt->fetchAll();
 // Contar pendientes
 $totalPendientes = count(array_filter($postulations, fn($p) => $p['estado_postulacion'] === 'en_espera'));
 
-function matchColor($pct) {
-    if ($pct >= 85) return '#10b981';
-    if ($pct >= 70) return '#f59e0b';
-    if ($pct > 0  ) return '#ef4444';
+function matchColor($pct)
+{
+    if ($pct >= 85)
+        return '#10b981';
+    if ($pct >= 70)
+        return '#f59e0b';
+    if ($pct > 0)
+        return '#ef4444';
     return '#64748b';
 }
 
 $estadoMap = [
-    'en_espera'              => ['label' => 'En Espera',   'class' => 'badge-warning'],
-    'IA Realizado'           => ['label' => 'IA Realizado','class' => 'badge-primary'],
-    'Apto'                   => ['label' => 'Apto',        'class' => 'badge-success'],
-    'No Apto'                => ['label' => 'No Apto',     'class' => 'badge-danger'],
+    'en_espera' => ['label' => 'En Espera', 'class' => 'badge-warning'],
+    'IA Realizado' => ['label' => 'IA Realizado', 'class' => 'badge-primary'],
+    'Apto' => ['label' => 'Apto', 'class' => 'badge-success'],
+    'No Apto' => ['label' => 'No Apto', 'class' => 'badge-danger'],
 ];
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>Candidatos | StarTraining</title>
@@ -55,14 +60,23 @@ $estadoMap = [
     <link rel="stylesheet" href="/assets/css/style.css">
     <style>
         /* Spinner */
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner { animation: spin 0.8s linear infinite; display: inline-block; }
-        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner {
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+
         /* AI Progress Bar */
         .ai-progress-wrap {
             position: fixed;
-            bottom: 2rem; right: 2rem;
-            background: rgba(7,10,15,0.96);
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(7, 10, 15, 0.96);
             border: 1px solid var(--primary);
             border-radius: 20px;
             padding: 1.5rem 2rem;
@@ -74,11 +88,12 @@ $estadoMap = [
 
         .ai-progress-bar-bg {
             height: 8px;
-            background: rgba(255,255,255,0.08);
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 10px;
             overflow: hidden;
             margin-top: 0.75rem;
         }
+
         .ai-progress-bar-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--secondary), var(--primary));
@@ -87,20 +102,51 @@ $estadoMap = [
         }
 
         /* Row glow on analysis */
-        .row-analyzing { animation: rowPulse 1.2s infinite; }
-        @keyframes rowPulse {
-            0%, 100% { background: transparent; }
-            50% { background: rgba(var(--primary-rgb), 0.04); }
+        .row-analyzing {
+            animation: rowPulse 1.2s infinite;
         }
-        
+
+        @keyframes rowPulse {
+
+            0%,
+            100% {
+                background: transparent;
+            }
+
+            50% {
+                background: rgba(var(--primary-rgb), 0.04);
+            }
+        }
+
         /* Pending Pulse */
-        .match-pending { cursor: pointer; transition: transform 0.2s; }
-        .match-pending:hover { transform: scale(1.05); color: var(--primary) !important; }
-        .pulse-ia { animation: pulseIA 2s infinite; opacity: 0.7; }
+        .match-pending {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .match-pending:hover {
+            transform: scale(1.05);
+            color: var(--primary) !important;
+        }
+
+        .pulse-ia {
+            animation: pulseIA 2s infinite;
+            opacity: 0.7;
+        }
+
         @keyframes pulseIA {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; text-shadow: 0 0 10px var(--primary); }
-            100% { opacity: 0.5; }
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+                text-shadow: 0 0 10px var(--primary);
+            }
+
+            100% {
+                opacity: 0.5;
+            }
         }
 
         /* Fixed Centered Email Modal */
@@ -110,22 +156,35 @@ $estadoMap = [
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(12px);
             z-index: 10000;
-            display: none; /* Flex on open */
-            align-items: center; /* Centrado vertical */
-            justify-content: center; /* Centrado horizontal */
+            display: none;
+            /* Flex on open */
+            align-items: center;
+            /* Centrado vertical */
+            justify-content: center;
+            /* Centrado horizontal */
             padding: 1.5rem;
         }
+
         #emailModal .glass-card {
             width: 100%;
             max-width: 550px;
             animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         @keyframes modalFadeIn {
-            from { opacity: 0; transform: translateY(-20px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
     </style>
 </head>
+
 <body class="animate">
     <?php require_once __DIR__ . '/../../Layouts/Sidebar.php'; ?>
     <?php require_once __DIR__ . '/../../Layouts/Header.php'; ?>
@@ -134,43 +193,51 @@ $estadoMap = [
         <!-- Page Header -->
         <div class="d-flex justify-content-between align-items-center mb-4" style="flex-wrap: wrap; gap: 1rem;">
             <div>
-                <h1 class="text-gradient mb-1">Pipeline de Candidatos</h1>
+                <h1 class="text-gradient mb-1">Postulantes</h1>
                 <p class="text-muted small">Gestiona los postulantes y activa el análisis de IA cuando estés listo.</p>
             </div>
             <div class="d-flex gap-3 align-items-center flex-wrap">
                 <!-- Bulk AI Button -->
                 <?php if ($totalPendientes > 0): ?>
-                <button id="btnAnalizarTodos" class="btn-futuristic" style="background: linear-gradient(135deg, var(--accent), #a855f7); box-shadow: 0 4px 20px rgba(240,147,251,0.4);" onclick="analizarTodos()">
-                    <i class="fas fa-robot me-2"></i>
-                    ANALIZAR TODOS (<?= $totalPendientes ?> pendientes)
-                </button>
+                    <button id="btnAnalizarTodos" class="btn-futuristic"
+                        style="background: linear-gradient(135deg, var(--accent), #a855f7); box-shadow: 0 4px 20px rgba(240,147,251,0.4);"
+                        onclick="analizarTodos()">
+                        <i class="fas fa-robot me-2"></i>
+                        ANALIZAR TODOS (<?= $totalPendientes ?> pendientes)
+                    </button>
                 <?php else: ?>
-                <button class="btn-ghost" disabled style="opacity:0.4; cursor: not-allowed;">
-                    <i class="fas fa-robot me-2"></i> Sin pendientes
-                </button>
+                    <button class="btn-ghost" disabled style="opacity:0.4; cursor: not-allowed;">
+                        <i class="fas fa-robot me-2"></i> Sin pendientes
+                    </button>
                 <?php endif; ?>
-                <span class="badge badge-primary" style="font-size: 0.82rem; padding: 0.5rem 1rem;"><?= count($postulations) ?> candidatos</span>
+                <span class="badge badge-primary"
+                    style="font-size: 0.82rem; padding: 0.5rem 1rem;"><?= count($postulations) ?> candidatos</span>
             </div>
         </div>
 
         <!-- Filters -->
         <form method="GET" class="glass-card mb-4" style="padding: 1.2rem 1.5rem;">
             <div class="d-flex gap-3 flex-wrap align-items-center">
-                <div class="d-flex align-items-center gap-2" style="flex:1; min-width:200px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 0.6rem 1rem;">
+                <div class="d-flex align-items-center gap-2"
+                    style="flex:1; min-width:200px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 12px; padding: 0.6rem 1rem;">
                     <i class="fas fa-search text-muted xsmall"></i>
-                    <input type="text" name="search" value="<?= htmlspecialchars($filterSearch) ?>" placeholder="Buscar nombre o vacante..." style="background: none; border: none; outline: none; color: var(--text-primary); font-family: var(--font); font-size: 0.9rem; width: 100%;">
+                    <input type="text" name="search" value="<?= htmlspecialchars($filterSearch) ?>"
+                        placeholder="Buscar nombre o vacante..."
+                        style="background: none; border: none; outline: none; color: var(--text-primary); font-family: var(--font); font-size: 0.9rem; width: 100%;">
                 </div>
                 <select name="estado" class="form-input" style="max-width:200px; padding: 0.6rem 1rem;">
                     <option value="">Todos los estados</option>
-                    <option value="en_espera" <?= $filterStatus==='en_espera' ? 'selected':'' ?>>En Espera</option>
-                    <option value="IA Realizado" <?= $filterStatus==='IA Realizado' ? 'selected':'' ?>>IA Realizado</option>
-                    <option value="Apto" <?= $filterStatus==='Apto' ? 'selected':'' ?>>Apto</option>
-                    <option value="No Apto" <?= $filterStatus==='No Apto' ? 'selected':'' ?>>No Apto</option>
+                    <option value="en_espera" <?= $filterStatus === 'en_espera' ? 'selected' : '' ?>>En Espera</option>
+                    <option value="IA Realizado" <?= $filterStatus === 'IA Realizado' ? 'selected' : '' ?>>IA Realizado
+                    </option>
+                    <option value="Apto" <?= $filterStatus === 'Apto' ? 'selected' : '' ?>>Apto</option>
+                    <option value="No Apto" <?= $filterStatus === 'No Apto' ? 'selected' : '' ?>>No Apto</option>
                 </select>
                 <button type="submit" class="btn-futuristic" style="padding: 0.65rem 1.5rem; font-size:0.78rem;">
                     <i class="fas fa-filter"></i> FILTRAR
                 </button>
-                <a href="/postulations" class="btn-ghost" style="padding: 0.65rem 1.5rem; font-size:0.78rem;">Limpiar</a>
+                <a href="/postulations" class="btn-ghost"
+                    style="padding: 0.65rem 1.5rem; font-size:0.78rem;">Limpiar</a>
             </div>
         </form>
 
@@ -197,90 +264,100 @@ $estadoMap = [
                         $cvUrl = $urlRaw ? (str_starts_with($urlRaw, 'http') ? $urlRaw : '/' . $urlRaw) : '';
 
                         // Build safe JS strings for the modal
-                        $jsDni          = addslashes($p['dni']);
-                        $jsNombre       = addslashes(htmlspecialchars($p['nombre_completo']));
-                        $jsCorreo       = addslashes(htmlspecialchars($p['correo_estudiante']));
-                        $jsCelular      = addslashes($p['celular']);
-                        $jsPuesto       = addslashes(htmlspecialchars($p['titulo_puesto']));
-                        $jsDescripcion  = addslashes(htmlspecialchars($p['ia_analisis_descripcion'] ?? ''));
-                    ?>
-                    <tr id="row-<?= $p['id'] ?>">
-                        <td class="ps-5">
-                            <div class="d-flex align-items-center gap-3">
-                                <div style="width:44px; height:44px; border-radius:12px; background:rgba(var(--primary-rgb),0.1); display:flex; align-items:center; justify-content:center; color:var(--primary); flex-shrink:0; font-size:1.1rem;">
-                                    <i class="fas fa-user-graduate"></i>
+                        $jsDni = addslashes($p['dni']);
+                        $jsNombre = addslashes(htmlspecialchars($p['nombre_completo']));
+                        $jsCorreo = addslashes(htmlspecialchars($p['correo_estudiante']));
+                        $jsCelular = addslashes($p['celular']);
+                        $jsPuesto = addslashes(htmlspecialchars($p['titulo_puesto']));
+                        $jsDescripcion = addslashes(htmlspecialchars($p['ia_analisis_descripcion'] ?? ''));
+                        ?>
+                        <tr id="row-<?= $p['id'] ?>">
+                            <td class="ps-5">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div
+                                        style="width:44px; height:44px; border-radius:12px; background:rgba(var(--primary-rgb),0.1); display:flex; align-items:center; justify-content:center; color:var(--primary); flex-shrink:0; font-size:1.1rem;">
+                                        <i class="fas fa-user-graduate"></i>
+                                    </div>
+                                    <div>
+                                        <p class="mb-0 fw-700" style="font-size:0.92rem;" id="name-<?= $p['id'] ?>">
+                                            <?= htmlspecialchars($p['nombre_completo']) ?></p>
+                                        <span
+                                            class="text-muted xsmall"><?= htmlspecialchars($p['correo_estudiante']) ?></span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="mb-0 fw-700" style="font-size:0.92rem;" id="name-<?= $p['id'] ?>"><?= htmlspecialchars($p['nombre_completo']) ?></p>
-                                    <span class="text-muted xsmall"><?= htmlspecialchars($p['correo_estudiante']) ?></span>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <p class="mb-0 fw-600" style="font-size:0.88rem;"><?= htmlspecialchars($p['titulo_puesto']) ?></p>
-                            <span class="badge badge-primary" style="font-size:0.55rem;"><?= $p['modalidad'] ?></span>
-                        </td>
-                        <td class="text-muted small"><?= date('d M, Y', strtotime($p['fecha_postulacion'])) ?></td>
-                        <td id="match-<?= $p['id'] ?>">
-                            <?php if ($p['estado_postulacion'] !== 'en_espera'): ?>
-                                <span class="fw-900" style="font-size:1.3rem; color:<?= $color ?>;"><?= $pct ?>%</span>
-                                <div class="match-bar-bg" style="width:80px; margin-top:0.3rem;">
-                                    <div class="match-bar-fill" style="width:<?= max(2, $pct) ?>%; background:<?= $color ?>;"></div>
-                                </div>
-                            <?php else: ?>
-                                <button class="btn-futuristic py-2 px-3 small pulse-ia" style="background: linear-gradient(135deg, var(--accent), #a855f7); border-radius: 12px; font-size: 0.68rem;" onclick="analizarUno(<?= $p['id'] ?>, '<?= $jsPuesto ?>')">
-                                    <i class="fas fa-robot me-1"></i> ANALIZAR
-                                </button>
-                            <?php endif; ?>
-                        </td>
-                        <td id="status-<?= $p['id'] ?>">
-                            <span class="badge <?= $estado['class'] ?>"><?= $estado['label'] ?></span>
-                        </td>
-                        <td class="pe-5" style="text-align:right;">
-                            <div class="d-flex gap-2 justify-content-end align-items-center">
-
-                                <!-- Analyze individually -->
-                                <?php if ($isPending): ?>
-                                <button id="btn-ia-<?= $p['id'] ?>" class="btn-futuristic py-2 px-3"
-                                    style="font-size:0.72rem; background: linear-gradient(135deg, var(--accent), #a855f7); box-shadow: 0 2px 12px rgba(240,147,251,0.3); border-radius:10px;"
-                                    onclick="analizarUno(<?= $p['id'] ?>, '<?= $jsPuesto ?>')"
-                                    title="Analizar este CV con IA">
-                                    <i class="fas fa-robot"></i> IA
-                                </button>
+                            </td>
+                            <td>
+                                <p class="mb-0 fw-600" style="font-size:0.88rem;">
+                                    <?= htmlspecialchars($p['titulo_puesto']) ?></p>
+                                <span class="badge badge-primary" style="font-size:0.55rem;"><?= $p['modalidad'] ?></span>
+                            </td>
+                            <td class="text-muted small"><?= date('d M, Y', strtotime($p['fecha_postulacion'])) ?></td>
+                            <td id="match-<?= $p['id'] ?>">
+                                <?php if ($p['estado_postulacion'] !== 'en_espera'): ?>
+                                    <span class="fw-900" style="font-size:1.3rem; color:<?= $color ?>;"><?= $pct ?>%</span>
+                                    <div class="match-bar-bg" style="width:80px; margin-top:0.3rem;">
+                                        <div class="match-bar-fill"
+                                            style="width:<?= max(2, $pct) ?>%; background:<?= $color ?>;"></div>
+                                    </div>
                                 <?php else: ?>
-                                <span title="Ya analizado" style="width:32px; display:inline-flex; align-items:center; justify-content:center; color: var(--primary); font-size:1rem;">
-                                    <i class="fas fa-check-circle"></i>
-                                </span>
+                                    <button class="btn-futuristic py-2 px-3 small pulse-ia"
+                                        style="background: linear-gradient(135deg, var(--accent), #a855f7); border-radius: 12px; font-size: 0.68rem;"
+                                        onclick="analizarUno(<?= $p['id'] ?>, '<?= $jsPuesto ?>')">
+                                        <i class="fas fa-robot me-1"></i> ANALIZAR
+                                    </button>
                                 <?php endif; ?>
+                            </td>
+                            <td id="status-<?= $p['id'] ?>">
+                                <span class="badge <?= $estado['class'] ?>"><?= $estado['label'] ?></span>
+                            </td>
+                            <td class="pe-5" style="text-align:right;">
+                                <div class="d-flex gap-2 justify-content-end align-items-center">
 
-                                <!-- View candidate details -->
-                                <button class="btn-ghost py-2 px-3" style="font-size:0.72rem; border-radius:10px;"
-                                    onclick="openDetailModal('Perfil del Candidato', buildCandidateHtml(
+                                    <!-- Analyze individually -->
+                                    <?php if ($isPending): ?>
+                                        <button id="btn-ia-<?= $p['id'] ?>" class="btn-futuristic py-2 px-3"
+                                            style="font-size:0.72rem; background: linear-gradient(135deg, var(--accent), #a855f7); box-shadow: 0 2px 12px rgba(240,147,251,0.3); border-radius:10px;"
+                                            onclick="analizarUno(<?= $p['id'] ?>, '<?= $jsPuesto ?>')"
+                                            title="Analizar este CV con IA">
+                                            <i class="fas fa-robot"></i> IA
+                                        </button>
+                                    <?php else: ?>
+                                        <span title="Ya analizado"
+                                            style="width:32px; display:inline-flex; align-items:center; justify-content:center; color: var(--primary); font-size:1rem;">
+                                            <i class="fas fa-check-circle"></i>
+                                        </span>
+                                    <?php endif; ?>
+
+                                    <!-- View candidate details -->
+                                    <button class="btn-ghost py-2 px-3" style="font-size:0.72rem; border-radius:10px;"
+                                        onclick="openDetailModal('Perfil del Candidato', buildCandidateHtml(
                                         '<?= $jsDni ?>', '<?= $jsNombre ?>', '<?= $jsCorreo ?>', '<?= $jsCelular ?>',
                                         '<?= $jsPuesto ?>', <?= $pct ?>, '<?= $estado['class'] ?>', '<?= $estado['label'] ?>',
                                         '<?= $jsDescripcion ?>', '<?= addslashes($cvUrl) ?>', <?= $p['id'] ?>, <?= var_export($isPending, true) ?>
                                     ))">
-                                    <i class="fas fa-eye"></i>
-                                </button>
+                                        <i class="fas fa-eye"></i>
+                                    </button>
 
-                                <!-- CV Download -->
-                                <?php if ($cvUrl): ?>
-                                <a href="<?= $cvUrl ?>" target="_blank" class="btn-ghost py-2 px-3" style="font-size:0.72rem; border-radius:10px;" title="Ver CV">
-                                    <i class="fas fa-file-pdf"></i>
-                                </a>
-                                <?php endif; ?>
-                            </div>
-                        </td>
-                    </tr>
+                                    <!-- CV Download -->
+                                    <?php if ($cvUrl): ?>
+                                        <a href="<?= $cvUrl ?>" target="_blank" class="btn-ghost py-2 px-3"
+                                            style="font-size:0.72rem; border-radius:10px;" title="Ver CV">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
                     <?php endforeach; ?>
 
                     <?php if (empty($postulations)): ?>
-                    <tr>
-                        <td colspan="6" class="text-center py-5">
-                            <i class="fas fa-satellite-dish text-muted" style="font-size:2.5rem; opacity:0.3; display:block; margin-bottom:1rem;"></i>
-                            <p class="text-muted">No hay candidatos que coincidan con los filtros aplicados.</p>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <i class="fas fa-satellite-dish text-muted"
+                                    style="font-size:2.5rem; opacity:0.3; display:block; margin-bottom:1rem;"></i>
+                                <p class="text-muted">No hay candidatos que coincidan con los filtros aplicados.</p>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -306,26 +383,32 @@ $estadoMap = [
         <div class="glass-card" onclick="event.stopPropagation()">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="text-gradient mb-0"><i class="fas fa-paper-plane me-2"></i>Enviar Notificación</h3>
-                <button onclick="closeEmailModal()" class="btn-ghost" style="padding:0.4rem 0.75rem; border-radius:10px;"><i class="fas fa-times"></i></button>
+                <button onclick="closeEmailModal()" class="btn-ghost"
+                    style="padding:0.4rem 0.75rem; border-radius:10px;"><i class="fas fa-times"></i></button>
             </div>
-            
+
             <form id="emailForm" onsubmit="sendCandidateEmail(event)">
                 <input type="hidden" id="emailPostId">
                 <div class="mb-3">
                     <label class="xsmall text-muted fw-800 mb-1 d-block text-uppercase">Para:</label>
-                    <input type="text" id="emailTo" class="form-input" readonly style="background:rgba(255,255,255,0.05);">
+                    <input type="text" id="emailTo" class="form-input" readonly
+                        style="background:rgba(255,255,255,0.05);">
                 </div>
                 <div class="mb-3">
                     <label class="xsmall text-muted fw-800 mb-1 d-block text-uppercase">Asunto:</label>
-                    <input type="text" id="emailSubject" class="form-input" required value="Noticias sobre tu postulación | StarTraining">
+                    <input type="text" id="emailSubject" class="form-input" required
+                        value="Noticias sobre tu postulación | StarTraining">
                 </div>
                 <div class="mb-4">
                     <label class="xsmall text-muted fw-800 mb-1 d-block text-uppercase">Mensaje Adicional:</label>
-                    <textarea id="emailMessage" class="form-input" rows="5" required placeholder="Escribe el mensaje para el candidato..."></textarea>
+                    <textarea id="emailMessage" class="form-input" rows="5" required
+                        placeholder="Escribe el mensaje para el candidato..."></textarea>
                 </div>
                 <div class="d-flex gap-3 justify-content-end">
-                    <button type="button" onclick="closeEmailModal()" class="btn-ghost" style="padding:0.7rem 1.5rem;">Cerrar</button>
-                    <button type="submit" id="btnSendEmail" class="btn-futuristic" style="padding:0.7rem 2rem; background:linear-gradient(135deg, #007bff, #00d2ff);">
+                    <button type="button" onclick="closeEmailModal()" class="btn-ghost"
+                        style="padding:0.7rem 1.5rem;">Cerrar</button>
+                    <button type="submit" id="btnSendEmail" class="btn-futuristic"
+                        style="padding:0.7rem 2rem; background:linear-gradient(135deg, #007bff, #00d2ff);">
                         <i class="fas fa-paper-plane me-2"></i> ENVIAR AHORA
                     </button>
                 </div>
@@ -342,15 +425,15 @@ $estadoMap = [
             const matchHtml = pct > 0
                 ? `<span style="font-size:1.8rem; font-weight:900; color:${color};">${pct}%</span>`
                 : `<span class="text-muted">Pendiente de análisis</span>`;
-            
+
             const descHtml = descripcion
                 ? `<div class="border-top pt-3 mt-3"><p class="xsmall text-muted fw-800 mb-1">OPINIÓN DE LA IA</p><p style="font-size:0.9rem; line-height:1.6;">${descripcion}</p></div>`
                 : '';
-                
+
             const btnIA = isPending
                 ? `<button class="btn-futuristic py-2 px-4" style="font-size:0.78rem; background: linear-gradient(135deg, var(--accent), #a855f7);" onclick="closeDetailModal(); analizarUno(${postId}, '${puesto}')"><i class='fas fa-robot me-2'></i> ANALIZAR CON IA</button>`
                 : '';
-            
+
             const btnCV = cvUrl
                 ? `<a href="${cvUrl}" target="_blank" class="btn-futuristic py-2 px-4" style="font-size:0.78rem;"><i class='fas fa-file-pdf me-2'></i> VER CV</a>`
                 : '';
@@ -430,8 +513,8 @@ $estadoMap = [
                 const res = await fetch('/api/postulacion/send-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        postulacion_id: postId, 
+                    body: JSON.stringify({
+                        postulacion_id: postId,
                         subject: subject,
                         message: message
                     })
@@ -516,7 +599,7 @@ $estadoMap = [
         async function analizarTodos() {
             const btn = document.getElementById('btnAnalizarTodos');
             const progressWrap = document.getElementById('aiProgressWrap');
-            const progressBar  = document.getElementById('aiProgressBar');
+            const progressBar = document.getElementById('aiProgressBar');
             const progressText = document.getElementById('aiProgressText');
 
             if (!confirm('¿Iniciar el análisis de IA para todos los candidatos en espera?\n\nEsto puede tomar varios minutos.')) return;
@@ -532,7 +615,7 @@ $estadoMap = [
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                 });
-                
+
                 const text = await res.text();
                 let data;
                 try {
@@ -570,4 +653,5 @@ $estadoMap = [
         }
     </script>
 </body>
+
 </html>
