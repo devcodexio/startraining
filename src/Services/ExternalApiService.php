@@ -77,8 +77,8 @@ class ExternalApiService {
     public static function analizarCvConN8n(string $cvFilePath, string $requisitos): array {
         $webhookUrl = 'https://n8n-dqmewasf.us-west-1.clawcloudrun.com/webhook/analizar-cv';
 
-        if (!file_exists($cvFilePath)) {
-            return ['success' => false, 'error' => 'Archivo no encontrado: ' . $cvFilePath];
+        if (!is_file($cvFilePath)) {
+            return ['success' => false, 'error' => 'Archivo no encontrado o inválido: ' . $cvFilePath];
         }
 
         $cvFile = new \CURLFile($cvFilePath, 'application/pdf', 'curriculum.pdf');
