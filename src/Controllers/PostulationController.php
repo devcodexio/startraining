@@ -84,8 +84,8 @@ class PostulationController {
 
         // Ruta del CV en disco
         $cvFilePath = __DIR__ . '/../../public/' . $post['url_cv_pdf'];
-        if (!file_exists($cvFilePath)) {
-            echo json_encode(['success' => false, 'error' => 'Archivo CV no encontrado en el servidor']);
+        if (empty($post['url_cv_pdf']) || !is_file($cvFilePath)) {
+            echo json_encode(['success' => false, 'error' => 'Archivo CV no encontrado o inválido en el servidor']);
             return;
         }
 
@@ -141,9 +141,14 @@ class PostulationController {
         $fail = 0;
 
         foreach ($pendientes as $post) {
+            if (empty($post['url_cv_pdf'])) {
+                $fail++;
+                continue;
+            }
+
             $cvFilePath = __DIR__ . '/../../public/' . $post['url_cv_pdf'];
 
-            if (!file_exists($cvFilePath)) {
+            if (!is_file($cvFilePath)) {
                 $fail++;
                 continue;
             }
