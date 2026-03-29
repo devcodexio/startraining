@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Services;
-
+ 
 class ExternalApiService {
     
     private static function getApiKey() {
