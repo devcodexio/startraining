@@ -26,7 +26,7 @@ $vacancies = $vacancyModel->getAll(['search' => $search, 'carrera' => $carrera, 
         .vacancy-logo img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
-<body class="animate">
+<body class="animate" style="overflow: auto !important; height: auto !important; min-height: 100vh;">
     <nav class="glass animate" style="position: fixed; top: 1.5rem; left: 1.5rem; right: 1.5rem; height: 85px; display: flex; align-items: center; justify-content: space-between; padding: 0 4rem; z-index: 1000; border-radius: 30px; border: 1px solid var(--border-glass);">
         <h2 class="logo-text m-0" style="font-size: 2rem;">StarTraining</h2>
         <div class="d-flex align-items-center gap-5">
