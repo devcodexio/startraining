@@ -19,5 +19,8 @@ RUN a2enmod rewrite
 # 🔹 Permitir .htaccess
 RUN sed -i 's/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
+RUN echo "upload_max_filesize = 5M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 6M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 COPY . /var/www/html/
 RUN chown -R www-data:www-data /var/www/html
