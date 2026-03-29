@@ -307,4 +307,111 @@ class PostulationController {
             'analisis'   => $row['ia_analisis_descripcion']
         ]);
     }
+
+    /**
+     * Actualiza el estado de una postulación (Apto/No Apto).
+     * POST /api/postulacion/update-status
+     */
+    public function updateStatus() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'error' => 'Método no permitido']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = intval($input['postulacion_id'] ?? 0);
+        $estado = $input['estado'] ?? '';
+
+        if (!$id || !$estado) {
+            echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
+            return;
+        }
+
+        $db = Database::getConnection();
+        $stmt = $db->prepare("UPDATE postulaciones SET estado_postulacion = ? WHERE id = ?");
+        $success = $stmt->execute([$estado, $id]);
+
+        echo json_encode(['success' => $success]);
+    }
+
+    /**
+     * Envía un correo al postulante usando Resend API.
+     * POST /api/postulacion/send-email
+     */
+    public function sendEmail() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'error' => 'Método no permitido']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id = intval($input['postulacion_id'] ?? 0);
+        $subject = $input['subject'] ?? 'Actualización de tu postulación | StarTraining';
+        $message = $input['message'] ?? '';
+
+        if (!$id || !$message) {
+            echo json_encode(['success' => false, 'error' => 'Datos incompletos']);
+            return;
+        }
+
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT correo_estudiante, nombre_completo, estado_postulacion FROM postulaciones WHERE id = ?");
+        $stmt->execute([$id]);
+        $post = $stmt->fetch();
+
+        if (!$post) {
+            echo json_encode(['success' => false, 'error' => 'Postulación no encontrada']);
+            return;
+        }
+
+        // Solo permitir enviar si es APTO (como pidió el usuario)
+        if ($post['estado_postulacion'] !== 'Apto') {
+            echo json_encode(['success' => false, 'error' => 'Solo se puede enviar correos a postulantes marcados como "Apto".']);
+            return;
+        }
+
+        $apiKey = $_ENV['RESEND_API_KEY'] ?? '';
+        if (empty($apiKey)) {
+            echo json_encode(['success' => false, 'error' => 'No hay RESEND_API_KEY definida en el servidor.']);
+            return;
+        }
+
+        // Llamada a la API de Resend vía cURL
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json'
+        ]);
+        
+        $emailData = [
+            'from'    => 'StarTraining <onboarding@resend.dev>', // Usar dominio verificado o el de prueba de Resend
+            'to'      => [$post['correo_estudiante']],
+            'subject' => $subject,
+            'html'    => "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #eee; border-radius: 10px; padding: 20px; color: #333;'>
+                    <h2 style='color: #007bff;'>¡Hola, {$post['nombre_completo']}! 👋</h2>
+                    <p style='font-size: 16px; line-height: 1.6;'>Tenemos noticias sobre tu postulación:</p>
+                    <div style='background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;'>
+                        " . nl2br(htmlspecialchars($message)) . "
+                    </div>
+                    <p style='font-size: 14px; color: #777;'>Saludos cordiales,<br>El equipo de StarTraining</p>
+                </div>
+            "
+        ];
+        
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($emailData));
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Error de Resend: ' . $response]);
+        }
+    }
 }
