@@ -189,7 +189,7 @@ class PostulationController {
 
         // Actualizar BD
         $upd = $db->prepare("UPDATE postulaciones 
-                              SET match_porcentaje = ?, ia_analisis_descripcion = ?, estado_postulacion = 'Análisis IA Realizado'
+                              SET match_porcentaje = ?, ia_analisis_descripcion = ?, estado_postulacion = 'IA Realizado'
                               WHERE id = ?");
         $upd->execute([$puntaje, $descripcion, $postulacionId]);
 
@@ -245,7 +245,7 @@ class PostulationController {
 
             if ($resultado['success']) {
                 $upd = $db->prepare("UPDATE postulaciones 
-                                     SET match_porcentaje = ?, ia_analisis_descripcion = ?, estado_postulacion = 'Análisis IA Realizado'
+                                     SET match_porcentaje = ?, ia_analisis_descripcion = ?, estado_postulacion = 'IA Realizado'
                                      WHERE id = ?");
                 $upd->execute([$resultado['puntaje'], $resultado['descripcion'], $post['id']]);
                 $resultados[] = ['id' => $post['id'], 'puntaje' => $resultado['puntaje']];
