@@ -31,18 +31,18 @@ $config = $configModel->getSettings();
 
         <form action="/admin/save-config" method="POST" id="mainConfigForm">
             <div class="row g-4">
-                <div class="col-lg-8">
+                <div class="col-8">
                     <!-- Sección: General -->
                     <div class="glass-card mb-4 animate shadow-sm" style="padding: 3rem;">
                         <h3 class="fw-800 mb-5 d-flex align-items-center gap-3">
                             <i class="fas fa-desktop text-primary"></i> Apariencia & Marca
                         </h3>
                         <div class="row">
-                            <div class="col-md-6 form-group mb-5">
+                            <div class="col-6 form-group mb-5">
                                 <label class="mb-2 text-muted xsmall fw-800 ls-2">NOMBRE DEL SITIO</label>
                                 <input type="text" name="nombre_sitio" class="form-input" value="<?= htmlspecialchars($config['nombre_sitio'] ?? 'StarTraining') ?>" required>
                             </div>
-                            <div class="col-md-6 form-group mb-5">
+                            <div class="col-6 form-group mb-5">
                                 <label class="mb-2 text-muted xsmall fw-800 ls-2">ESLOGAN / DESCRIPCIÓN FOOTER</label>
                                 <input type="text" name="footer_descripcion" class="form-input" value="<?= htmlspecialchars($config['footer_descripcion'] ?? 'Plataforma líder en reclutamiento.') ?>">
                             </div>
@@ -54,11 +54,11 @@ $config = $configModel->getSettings();
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 form-group">
+                            <div class="col-6 form-group">
                                 <label class="mb-2 text-muted xsmall fw-800 ls-2">EMAIL PÚBLICO</label>
                                 <input type="email" name="email_contacto" class="form-input" value="<?= htmlspecialchars($config['email_contacto'] ?? 'contacto@startraining.com') ?>">
                             </div>
-                            <div class="col-md-6 form-group">
+                            <div class="col-6 form-group">
                                 <label class="mb-2 text-muted xsmall fw-800 ls-2">TELÉFONO CONTACTO</label>
                                 <input type="text" name="telefono_contacto" class="form-input" value="<?= htmlspecialchars($config['telefono_contacto'] ?? '+51 987 654 321') ?>">
                             </div>
@@ -105,7 +105,7 @@ $config = $configModel->getSettings();
                     </div>
                 </div>
 
-                <div class="col-lg-4">
+                <div class="col-4">
                     <div class="glass-card sticky-top animate shadow-sm" style="top: 100px; padding: 2.5rem; border: 1px solid var(--primary);">
                         <h4 class="fw-800 mb-4">Acciones Maestro</h4>
                         <p class="text-muted small mb-5">Asegúrate de revisar todos los cambios antes de confirmar. Estos afectarán a todos los visitantes del sitio.</p>

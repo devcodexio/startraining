@@ -30,7 +30,7 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table-modern">
+                <table class="table-cyber">
                     <thead>
                         <tr>
                             <th class="ps-4">Vacante</th>
